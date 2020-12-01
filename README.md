@@ -1,3 +1,13 @@
+# Requirements
+
+scikit-learn
+scipy
+numpy
+pandas
+pymp-pypi
+tqdm
+
+
 # Dataset
 
 The movies dataset from Kaggle: [https://www.kaggle.com/rounakbanik/the-movies-dataset]. Data directory: `./data/`.

@@ -1,7 +1,6 @@
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
 from scipy.special import softmax
-from tqdm import tqdm
 import pymp
 
 from collections import defaultdict
@@ -32,9 +31,9 @@ def args_parser():
                         help='movieId mapping')
 	parser.add_argument('--output', required=False, default='walks.txt',
 						help='output file name for walks')
-	parser.add_argument('--num_walks', required=False, type=int, default=100,
+	parser.add_argument('--num_walks', required=False, type=int, default=50,
 						help='number of walks generated for each user')
-	parser.add_argument('--length', required=False, type=int, default=80,
+	parser.add_argument('--length', required=False, type=int, default=40,
 						help='length of each walk')
 	parser.add_argument('--alpha', required=False, type=float, default=1.0,
 						help='adjust softmax')
@@ -198,13 +197,18 @@ if __name__ == "__main__":
 	data = dataset(num_movies, num_genres, num_cast, num_users, total, m2g, g2m, m2c, c2m, u2m, u2mr, m2u, m2ur, args.alpha)
 
 	f = open("/".join([args.dir, args.output]),"w")
-	for uId in tqdm(u2m.keys()):
-		if len(u2m[uId]) > 0:
-			walks = [None] * args.num_walks
-			with pymp.Parallel(args.num_threads) as p:
-				for i in p.range(args.num_walks):
+	uIds = list(u2m.keys())
+	print("num_threads: %d"%(args.num_threads))
+	with pymp.Parallel(args.num_threads) as p:
+		walks = [None] * args.num_walks
+		for uId in p.iterate(uIds):
+			if uId % 100 == 0:
+				print("uId %d / %d from tid %d"%(uId, num_users, p.thread_num))
+			if len(u2m[uId]) > 0:
+				for i in range(args.num_walks):
 					walks[i] = randomWalk(uId, data, args.length)
-			for i in range(num_walks):
-				f.write("%s\n"%(walks[i]))
+				with p.lock:
+					for i in range(args.num_walks):
+						f.write("%s\n"%(walks[i]))
 	f.close()
 
