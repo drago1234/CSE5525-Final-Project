@@ -1,7 +1,14 @@
+# Customized files
+.DS_Store
+Reference/
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
 
 # data
 data/
