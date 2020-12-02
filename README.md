@@ -4,7 +4,6 @@ scikit-learn
 scipy
 numpy
 pandas
-pymp-pypi
 tqdm
 
 

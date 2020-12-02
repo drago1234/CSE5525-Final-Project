@@ -1,6 +1,7 @@
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
 from scipy.special import softmax
+from utils import readInfo
 import pymp
 
 from collections import defaultdict
@@ -41,42 +42,6 @@ def args_parser():
                         help='Number of threads used for coarsening')
 	args = parser.parse_args()
 	return args
-
-def readInfo(args):
-	"""
-	Read statistics of the dataset, and create id2type.txt
-	"""
-	f = open("/".join([args.dir, 'datainfo.md']), "r")
-	nums = {}
-	print("**********")
-	for line in f:
-		eles = line.strip().split()
-		if len(eles) > 1 and eles[1].isnumeric():
-			nums[eles[0]] = int(eles[1])
-			print("%s %d"%(eles[0], nums[eles[0]]))
-	print("**********")
-	num_movies, num_genres, num_cast, num_users, total = nums['num_movies'], nums['num_genres'], nums['num_cast'], nums['num_users'], nums['total']
-	f.close()
-
-	# create id2type
-	f = open("/".join([args.dir, 'id2type.txt']), "w")
-	id_base = 0
-	for i in range(num_movies):
-		f.write("%d movie\n"%(i))
-	id_base += num_movies
-	for i in range(num_genres):
-		f.write("%d genre\n"%(i + id_base))
-	id_base += num_genres
-	for i in range(num_cast):
-		f.write("%d cast\n"%(i + id_base))
-	id_base += num_cast
-	for i in range(num_users):
-		f.write("%d user\n"%(i + id_base))
-	id_base += num_users
-	assert id_base == total
-
-	f.close()
-	return num_movies, num_genres, num_cast, num_users, total
 
 def readMap(args, filename):
 	"""
