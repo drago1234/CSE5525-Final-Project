@@ -12,7 +12,7 @@ def args_parser():
 						conflict_handler='resolve')
 	parser.add_argument('--dir', required=False, default='./processed_data/',
 						help='directory of preprocessed data')
-	parser.add_argument('--graphemb', required=False, default='embeddings.txt.txt',
+	parser.add_argument('--graphemb', required=False, default='embeddings.txt',
 						help='filename of graph embeddings')
 	parser.add_argument('--textemb', required=False, default='text_embeddings.txt',
 						help='filename of graph embeddings')
@@ -132,7 +132,10 @@ if __name__ == "__main__":
 	args = args_parser()
 
 	# get index information of users and movies
+	print(f"args: {args}")
 	num_users, user_base, num_movies, movie_base = getIndInfo(args)
+	print(f"num_users: {num_users}, user_base: {user_base}, num_movies: {num_movies}, movie_base: {movie_base}")
+	
 	
 	# read embeddings
 	user_emb, movie_emb = readEmbeddings(args.dir, args.graphemb, num_users, user_base, num_movies, movie_base)
