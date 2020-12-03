@@ -20,7 +20,7 @@ def args_parser():
 						help='input for classifier. 0 for graph embeddings only, 1 for text embedding only, 2 for both.')
 	parser.add_argument('--epoch', required=False, type=int, default=5,
 						help='number of epochs for training')
-	parser.add_argument('--batch-size', required=False, type=int, default=5000,
+	parser.add_argument('--batch-size', required=False, type=int, default=1000,
 						help='batch_size for training')
 	parser.add_argument('--lr', required=False, type=float, default=1e-3,
 						help='learning rate')
@@ -39,50 +39,59 @@ def getIndInfo(args):
 
 class DataLoader():
 	def __init__(self, args, user_emb, movie_emb, user_base, movie_base):
+		self.movie_emb = movie_emb
+		self.user_emb = user_emb
+		self.easy = args.easy
+
 		filename = "/".join([args.dir, "rating_train.csv"])
 		train_df = pd.read_csv(filename)
-		train_uid = np.array(train_df["uId"], dtype=np.int32)
-		train_mid = np.array(train_df["mId"], dtype=np.int32)
-		train_binary = np.array(train_df["binary"], dtype=np.int32)
-		train_rating = np.array(train_df["rating"] * 2 - 1, dtype=np.int32)
-
-		X_train_user = user_emb[train_uid - user_base]
-		X_train_movie = movie_emb[train_mid - movie_base]
-		self.train_data = np.concatenate([X_train_user, X_train_movie], axis=1)
-		self.train_label = train_binary if args.easy else train_rating
+		self.train_uid = np.array(train_df["uId"], dtype=np.int32) - user_base
+		self.train_mid = np.array(train_df["mId"], dtype=np.int32) - movie_base
+		self.train_binary = np.array(train_df["binary"], dtype=np.int32)
+		self.train_rating = np.array(train_df["rating"] * 2 - 1, dtype=np.int32)
 
 		filename = "/".join([args.dir, "rating_test.csv"])
 		test_df = pd.read_csv(filename)
-		test_uid = np.array(test_df["uId"], dtype=np.int32)
-		test_mid = np.array(test_df["mId"], dtype=np.int32)
-		test_binary = np.array(test_df["binary"], dtype=np.int32)
-		test_rating = np.array(test_df["rating"] * 2 - 1, dtype=np.int32)
+		self.test_uid = np.array(test_df["uId"], dtype=np.int32) - user_base
+		self.test_mid = np.array(test_df["mId"], dtype=np.int32) - movie_base
+		self.test_binary = np.array(test_df["binary"], dtype=np.int32)
+		self.test_rating = np.array(test_df["rating"] * 2 - 1, dtype=np.int32)
 
-		X_test_user = user_emb[test_uid - user_base]
-		X_test_movie = movie_emb[test_mid - movie_base]
-		self.test_data = np.concatenate([X_test_user, X_test_movie], axis=1)
-		self.test_label = test_binary if args.easy else test_rating
-
-		self.num_train_data, self.num_test_data = self.train_data.shape[0], self.test_data.shape[0]
+		self.num_train_data, self.num_test_data = self.train_uid.shape[0], self.test_uid.shape[0]
 
 		print("**********\nDataLoader")
 		print("num_train_data: %d, num_test_data: %d"%(self.num_train_data, self.num_test_data))
-		print("data_dim: %d"%(self.train_data.shape[1]))
+		print("data_dim: %d"%(self.user_emb.shape[1] + self.movie_emb.shape[1]))
 
 	def get_batch(self, batch_size):
 		index = np.random.randint(0, self.num_train_data, batch_size)
-		return self.train_data[index, :], self.train_label[index]
+		uIds = self.train_uid[index]
+		mIds = self.train_mid[index]
+		train_data = np.concatenate([self.user_emb[uIds], self.movie_emb[mIds]], axis=1)
+		train_label = self.train_binary[index] if self.easy else self.train_rating[index]
+		return train_data, train_label
+	
+	def get_test_batch(self, st_idx, ed_idx):
+		uIds = self.test_uid[st_idx:ed_idx]
+		mIds = self.test_mid[st_idx:ed_idx]
+		test_data = np.concatenate([self.user_emb[uIds], self.movie_emb[mIds]], axis=1)
+		test_label = self.test_binary[st_idx:ed_idx] if self.easy else self.test_rating[st_idx:ed_idx]
+		return test_data, test_label
 
 class MLP(kr.Model):
 	""" Multi-layer perceptrons """
-	def __init__(self, args, data_loader, epoch=5, batch_size=5000, learning_rate=1e-3):
+	def __init__(self, args, data_loader, epoch=5, batch_size=1000, learning_rate=1e-3):
 		super().__init__()
 		self.flatten = kr.layers.Flatten()
 		self.dense1 = kr.layers.Dense(
-											units=100,
+											units=128,
 											activation=tf.nn.relu
 											)
 		self.dense2 = kr.layers.Dense(
+											units=32,
+											activation=tf.nn.relu
+											)
+		self.dense3 = kr.layers.Dense(
 											units=2 if args.easy else 10,
 											)
 		self.optimizer = kr.optimizers.Adam(learning_rate=learning_rate)
@@ -94,37 +103,45 @@ class MLP(kr.Model):
 		flattened = self.flatten(input_data)
 		l1 = self.dense1(flattened)
 		l2 = self.dense2(l1)
-		output = tf.nn.softmax(l2)
+		l3 = self.dense3(l2)
+		output = tf.nn.softmax(l3)
 		return output
 
 	def train(self):
+		print("**********\nStart to train\n**********")
 		start = time.time()
 		for i in range(int(self.data_loader.num_train_data / self.batch_size * self.epoch)):
 			st = time.time()
 			X, y = self.data_loader.get_batch(self.batch_size)
 			with tf.GradientTape() as tape:
 				pred = self.call(X)
-				loss = kr.losses.sparse_categorical_crossentropy(y_true=y, y_pred=pred)
+				loss = kr.losses.sparse_categorical_crossentropy(y_true=y, y_pred=pred)  # mean_squared_error
 				loss = tf.reduce_mean(loss)
 			grads = tape.gradient(loss, self.variables)
 			self.optimizer.apply_gradients(grads_and_vars=zip(grads, self.variables))
 			ed = time.time()
-			if i % 50 == 0:
-				print("Batch %d: loss = %f, time = %.3f"%(i, loss.numpy(), ed - st))
+			if i % 200 == 0:
+				print("Batch %d: loss = %f, time = %.3f"%(i, loss.numpy(), ed - st))  # divide by 4 because the rating has been amplified by 2.
 		endt = time.time()
 		print("Total time for training: %.3f"%(endt - start))
 
 	def eval(self):
+		print("**********\nEval start\n**********")
 		sca = kr.metrics.SparseCategoricalAccuracy()
-		for i in range(int(self.data_loader.num_test_data / self.batch_size * self.epoch)):
+		mse = kr.metrics.MeanSquaredError()
+		mae = kr.metrics.MeanAbsoluteError()
+		for i in range(int(self.data_loader.num_test_data / self.batch_size)):
 			start_idx = i * self.batch_size
 			end_idx = (i + 1) * self.batch_size
-			X = self.data_loader.test_data[start_idx : end_idx]
-			y = self.data_loader.test_label[start_idx : end_idx]
+			X, y = self.data_loader.get_test_batch(start_idx, end_idx)
 			pred = self.call(X)
+			argmax = kr.backend.argmax(pred)
 			sca.update_state(y_true = y, y_pred = pred)
+			mse.update_state(y_true = y, y_pred = argmax)
+			mae.update_state(y_true = y, y_pred = argmax)
 
-		print("Accuracy = %f"%(sca.result()))
+		print("MSE = %f\nMAE = %f\nSCA = %f"%(mse.result()/4.0, mae.result()/2.0, sca.result()))
+
 
 if __name__ == "__main__":
 
@@ -149,7 +166,7 @@ if __name__ == "__main__":
 
 	# build X_train, y_train
 	dataloader = DataLoader(args, user_emb, movie_emb, user_base, movie_base)
-	model = MLP(args, dataloader, args, epoch=args.epochs, batch_size=args.batch_size, learning_rate=args.lr)
+	model = MLP(args, dataloader, epoch=args.epoch, batch_size=args.batch_size, learning_rate=args.lr)
 	model.train()
 	model.eval()
 
