@@ -1,7 +1,8 @@
 # Customized files
 .DS_Store
 Reference/
-
+venv/
+.vscode/
 
 
 # Byte-compiled / optimized / DLL files
