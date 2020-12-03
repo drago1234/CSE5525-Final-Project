@@ -169,4 +169,4 @@ if __name__ == "__main__":
 	train.to_csv("processed_data/rating_train.csv", columns=['uId', 'mId', 'binary', 'rating'], index=False)
 	test.to_csv("processed_data/rating_test.csv", columns=['uId', 'mId', 'binary', 'rating'], index=False)
 	
-	print("Finished.\nnum_movies %d \nnum_genres %d \nnum_cast %d \nnum_users %d \n--- \ntotal %d"%(num_movies, num_genres, num_cast, num_users, id_base + num_users))
+	print("Finished: \nnum_movies %d \nnum_genres %d \nnum_cast %d \nnum_users %d \n--- \ntotal %d"%(num_movies, num_genres, num_cast, num_users, id_base + num_users))
