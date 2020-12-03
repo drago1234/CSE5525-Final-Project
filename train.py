@@ -20,7 +20,7 @@ def args_parser():
 						help='input for classifier. 0 for graph embeddings only, 1 for text embedding only, 2 for both.')
 	parser.add_argument('--epoch', required=False, type=int, default=5,
 						help='number of epochs for training')
-	parser.add_argument('--batch-size', required=False, type=int, default=500,
+	parser.add_argument('--batch-size', required=False, type=int, default=1000,
 						help='batch_size for training')
 	parser.add_argument('--lr', required=False, type=float, default=1e-3,
 						help='learning rate')
@@ -80,7 +80,7 @@ class DataLoader():
 
 class MLP(kr.Model):
 	""" Multi-layer perceptrons """
-	def __init__(self, args, data_loader, epoch=10, batch_size=500, learning_rate=1e-3):
+	def __init__(self, args, data_loader, epoch=5, batch_size=1000, learning_rate=1e-3):
 		super().__init__()
 		self.flatten = kr.layers.Flatten()
 		self.dense1 = kr.layers.Dense(
@@ -120,7 +120,7 @@ class MLP(kr.Model):
 			grads = tape.gradient(loss, self.variables)
 			self.optimizer.apply_gradients(grads_and_vars=zip(grads, self.variables))
 			ed = time.time()
-			if i % 100 == 0:
+			if i % 200 == 0:
 				print("Batch %d: loss = %f, time = %.3f"%(i, loss.numpy(), ed - st))  # divide by 4 because the rating has been amplified by 2.
 		endt = time.time()
 		print("Total time for training: %.3f"%(endt - start))
