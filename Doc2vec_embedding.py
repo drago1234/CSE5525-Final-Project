@@ -3,6 +3,7 @@
 2) gensim.Doc2vec: https://radimrehurek.com/gensim/models/doc2vec.html
 3) Medium tutorial for Doc2vec: https://medium.com/@klintcho/doc2vec-tutorial-using-gensim-ab3ac03d3a1
 4) Kaggle tutorial: https://www.kaggle.com/farsanas/are-you-ready-to-build-your-own-word-embedding
+5) paper Distributed Representations of Sentences and Documents： https://arxiv.org/pdf/1405.4053v2.pdf
 '''
 # Tokenize the sentences
 import tensorflow as tf

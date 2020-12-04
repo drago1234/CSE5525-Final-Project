@@ -15,3 +15,11 @@ print(f"Size of corpus: {len(model.wv.vocab)}")   # Now the vocab contains 28322
 print(f"Dimension of the the entire corpus: {model.wv.vectors.shape}")
 print(f"Similarity word for 'beautiful': {model.wv.most_similar('beautiful')}")
 print(f"Check the dim of single word: {model.wv['right']}")
+
+# Save the model as textfile
+import numpy as np
+result = np.array([model.docvecs[i] for i in range(len(model.wv.vocab))])
+print(result[:2])
+# with open('Doc2vec_embedding_matrix.txt', 'w') as f:
+with open('Doc2vec_embedding_matrix.npy', 'wb') as f:
+    np.save(f, result)
