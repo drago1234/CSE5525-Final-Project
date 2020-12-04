@@ -18,8 +18,19 @@ print(f"Check the dim of single word: {model.wv['right']}")
 
 # Save the model as textfile
 import numpy as np
+import pandas as pd
 result = np.array([model.docvecs[i] for i in range(len(model.wv.vocab))])
-print(result[:2])
-# with open('Doc2vec_embedding_matrix.txt', 'w') as f:
-with open('Doc2vec_embedding_matrix.npy', 'wb') as f:
-    np.save(f, result)
+overview = 'processed_data/overviews.csv'
+data = pd.read_csv(overview) 
+mId = data['mId'].astype(int)
+
+# np.savetxt('test.out', result, delimiter=',')   # X is an array
+with open('Doc2vec_embedding_matrix.txt', 'w') as f:
+#     f.write(result.__str__())
+    for i in range(len(model.wv.vocab)):
+        f.write("%d "%mId[i])
+        for j in range(len(model.docvecs[i])):
+            f.write("%.4f "%model.docvecs[i][j])
+        f.write("\n")
+        # f.write("%.4f\n"%(mId[i], model.docvecs[i]))
+            # f.write(f"{mId[i]} {model.docvecs[i]}\n" )
