@@ -1,7 +1,7 @@
 from gensim.test.utils import common_texts
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
-file_name = 'Doc2vec_overview.model'
+file_name = 'Doc2vec_overview copy.model'
 model = Doc2Vec.load(file_name)
 # Infer a vector for a new doc
 stoplist = set('for a of the and to in'.split(' '))
@@ -24,18 +24,18 @@ overview = 'processed_data/overviews.csv'
 data = pd.read_csv(overview) 
 mId = data['mId'].astype(int)
 
-total_line = 0
-# np.savetxt('test.out', result, delimiter=',')   # X is an array
-with open('Doc2vec_embedding_matrix.txt', 'w') as f:
-#     f.write(result.__str__())
-    for i in range(len(mId)):
-        f.write("%d "%mId[i])
-        for j in range(len(model.docvecs[i])):
-            f.write("%.4f "%model.docvecs[i][j])
-        total_line+=1
-        f.write("\n")
-        # f.write("%.4f\n"%(mId[i], model.docvecs[i]))
-            # f.write(f"{mId[i]} {model.docvecs[i]}\n" )
+# total_line = 0
+# # np.savetxt('test.out', result, delimiter=',')   # X is an array
+# with open('Doc2vec_embedding_matrix.txt', 'w') as f:
+# #     f.write(result.__str__())
+#     for i in range(len(mId)):
+#         f.write("%d "%mId[i])
+#         for j in range(len(model.docvecs[i])):
+#             f.write("%.4f "%model.docvecs[i][j])
+#         total_line+=1
+#         f.write("\n")
+#         # f.write("%.4f\n"%(mId[i], model.docvecs[i]))
+#             # f.write(f"{mId[i]} {model.docvecs[i]}\n" )
 
-print(f"Expected total line: {len(mId)}")
-print(f"Total line written: {total_line}")
+# print(f"Expected total line: {len(mId)}")
+# print(f"Total line written: {total_line}")
